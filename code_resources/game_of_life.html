@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>From Traffic Simulations to Conway's Game of Life</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #f6f7fb;
+            --surface: #ffffff;
+            --ink: #0f172a;
+            --muted: #475569;
+            --border: #e2e8f0;
+            --accent: #2563eb;
+            --accent-strong: #1d4ed8;
+            --panel: #0b1021;
+            --cell: #7dd3fc;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at 20% 20%, #eef2ff 0, #f6f7fb 30%, #f6f7fb 100%);
+            color: var(--ink);
+            line-height: 1.7;
+        }
+
+        a {
+            color: var(--accent);
+        }
+
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 32px 18px 72px;
+        }
+
+        header.hero {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 28px 28px 24px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+        }
+
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            font-size: 12px;
+            margin: 0 0 10px;
+        }
+
+        h1 {
+            font-size: clamp(26px, 3vw, 34px);
+            margin: 0 0 12px;
+            line-height: 1.25;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin: 0 0 10px;
+            line-height: 1.35;
+        }
+
+        h3 {
+            font-size: 17px;
+            margin: 12px 0 8px;
+        }
+
+        p {
+            margin: 0 0 12px;
+            color: var(--muted);
+        }
+
+        ul {
+            margin: 0 0 12px 18px;
+            color: var(--muted);
+        }
+
+        li + li {
+            margin-top: 4px;
+        }
+
+        main {
+            margin-top: 18px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        }
+
+        section {
+            padding: 22px 24px;
+        }
+
+        section + section {
+            border-top: 1px solid var(--border);
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            padding-left: 12px;
+            margin: 10px 0 14px;
+            color: var(--muted);
+        }
+
+        .examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .example-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            background: #f8fafc;
+        }
+
+        .example-card strong {
+            color: var(--ink);
+        }
+
+        .demo {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 14px;
+            padding: 18px;
+            border: 1px solid #1e293b;
+        }
+
+        .demo h2, .demo p {
+            color: #e2e8f0;
+        }
+
+        .life-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 12px;
+        }
+
+        .life-controls button,
+        .life-controls select,
+        .life-controls input[type="range"] {
+            background: #111827;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+
+        .life-controls button:hover {
+            cursor: pointer;
+            border-color: #7dd3fc;
+        }
+
+        .life-controls label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+            font-size: 13px;
+            padding: 6px 0;
+        }
+
+        canvas {
+            border: 1px solid #1f2937;
+            background: var(--panel);
+            border-radius: 10px;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        .pattern-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0 0 10px;
+        }
+
+        .pattern-chips button {
+            background: #111827;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .pattern-chips button:hover {
+            cursor: pointer;
+            border-color: #7dd3fc;
+        }
+
+        .small-note {
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 640px) {
+            section {
+                padding: 18px 16px;
+            }
+            .life-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            canvas {
+                max-height: 360px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <div class="eyebrow">Agent-based modelling · Rust · WebAssembly</div>
+            <h1>From Traffic Simulations to Conway's Game of Life: Exploring Agent-Based Modelling with Rust and WebAssembly</h1>
+            <p>When I started a role working with agent-based modelling (ABM) to simulate traffic networks using MATSim, I found myself wanting to understand more about the modelling philosophy behind these systems. Large-scale simulations can feel complex and opaque&mdash;thousands (or millions) of agents making local decisions that produce global traffic patterns, congestion waves, and emergent behaviour.</p>
+            <p>To get a better feel for where many of these ideas originated, I went back to a classic example of emergent systems: Conway's Game of Life. As a learning exercise&mdash;and partly out of curiosity about performance and WebAssembly&mdash;I built it in Rust and compiled it to run in the browser via WASM.</p>
+            <p>This post covers that small project: why I chose Game of Life, what I learned building it, and how it sharpened my intuition for agent-based models.</p>
+        </header>
+
+        <main>
+            <section>
+                <h2>Cellular Automata, Local Rules, and Emergent Behaviour</h2>
+                <p>At its core, the Game of Life is a cellular automaton: a grid of cells that evolve over time according to a simple set of deterministic rules. Each cell is either alive or dead, and its next state depends only on its immediate neighbours. There is no central controller or global objective&mdash;only local interactions.</p>
+                <p>And yet, richer structures emerge:</p>
+                <ul>
+                    <li>oscillators</li>
+                    <li>gliders</li>
+                    <li>stable formations</li>
+                    <li>chaotic patterns that somehow self-organise</li>
+                </ul>
+                <p>This is what drew me in. Even though it is a toy model, it highlights a core concept I also see in traffic simulations: simple local rules can produce complex and often surprising global behaviour.</p>
+                <p>In MATSim, agents make local travel choices&mdash;departure time, route selection, mode choice&mdash;based on their own objectives and constraints. From that, we see network-level effects: congestion, bottlenecks, feedback loops, and system equilibria. The difference is scale and realism, but conceptually both systems share a lineage. Game of Life offers a compact, intuitive way to explore those ideas on a grid small enough to reason about.</p>
+            </section>
+
+            <section>
+                <h2>Why Rust + WebAssembly?</h2>
+                <p>I also wanted this to be an opportunity to learn something new technically.</p>
+                <ul>
+                    <li><strong>Rust appealed because of:</strong> strong guarantees around memory safety, explicit state management, and good performance for simulation-style workloads.</li>
+                    <li><strong>WebAssembly made it possible to:</strong> run the simulation in the browser, get native-like performance without JavaScript overhead, and package the project as an interactive demo rather than a static write-up.</li>
+                </ul>
+                <p>A browser-based simulation feels appropriate for this kind of model&mdash;you can tweak grid sizes, step speeds, or initial states and immediately see the dynamics unfold.</p>
+                <p>Rust + WASM also forced me to think carefully about how state is represented, how data moves across the Rust &harr; JavaScript boundary, and where performance bottlenecks actually occur. Even on something as small as a Game of Life grid, those questions matter.</p>
+            </section>
+
+            <section>
+                <h2>Designing the Simulation</h2>
+                <h3>Representing the grid</h3>
+                <p>I experimented with a 2D array and a flattened 1D vector. I eventually settled on a flat vector for performance and simplicity; contiguous buffers map well to the WASM memory model.</p>
+
+                <h3>Updating cell state</h3>
+                <p>For each tick I:</p>
+                <ul>
+                    <li>compute the number of live neighbours</li>
+                    <li>apply the classic Game of Life rules</li>
+                    <li>write results into the next buffer</li>
+                </ul>
+                <p>Instead of mutating the grid in place, I alternate between two buffers each step. That makes the logic easier to reason about and avoids subtle ordering bugs where an updated cell influences neighbouring updates in the same tick.</p>
+
+                <h3>Performance considerations</h3>
+                <p>Even in a small experiment like this, I noticed that allocations inside the update loop add up, neighbour-counting dominates compute time, and naive bounds checks create overhead. Rust makes those tradeoffs explicit&mdash;useful practice for larger modelling systems.</p>
+            </section>
+
+            <section>
+                <h2>Rust &rarr; WebAssembly &rarr; JavaScript</h2>
+                <p>The most interesting part was the interface. Questions I had to think through included:</p>
+                <ul>
+                    <li>What state should live in Rust vs in JS?</li>
+                    <li>Should the browser render from raw memory, or from a copied buffer?</li>
+                    <li>How often do I cross the WASM boundary per animation frame?</li>
+                </ul>
+                <p>This was great practice in thinking about data ownership, memory layout, and the cost of abstraction&mdash;all skills that transfer directly to more complex simulation work.</p>
+            </section>
+
+            <section>
+                <h2>What This Taught Me About Agent-Based Modelling</h2>
+                <h3>Local rules really do scale into global dynamics</h3>
+                <p>Even when the rules feel trivial, the resulting system is hard to predict, develops structure over time, and sometimes converges, collapses, or explodes. This maps surprisingly well to real-world simulations. In MATSim, agents do not coordinate globally; their decision rules are local and bounded, yet outcomes&mdash;congestion patterns and travel waves&mdash;look systemic.</p>
+
+                <h3>The model feels simple, but interpreting outcomes is not</h3>
+                <p>Small changes in initial conditions cascade. Intended outcomes are not guaranteed, and structure can emerge accidentally. A model is not just an implementation&mdash;it is a lens for interpreting emergent behaviour. That mindset applies to urban and transport simulations as much as to grid-based automata.</p>
+            </section>
+
+            <section>
+                <h2>Examples to explore</h2>
+                <p>Here are a few patterns I use to probe behaviour. Click a chip below the canvas to load them into the live demo.</p>
+                <div class="examples">
+                    <div class="example-card"><strong>Glider</strong><br>Simple diagonal movement that shows how structure can travel through local rules.</div>
+                    <div class="example-card"><strong>Blinker</strong><br>An oscillator that flips every tick; great for sanity-checking neighbour counts.</div>
+                    <div class="example-card"><strong>Toad</strong><br>Another small oscillator that tests multi-cell interaction.</div>
+                    <div class="example-card"><strong>Pulsar</strong><br>A larger-period oscillator; highlights how small timing bugs show up fast.</div>
+                    <div class="example-card"><strong>Lightweight spaceship</strong><br>Demonstrates movement across the grid and wrap-around edges.</div>
+                </div>
+            </section>
+
+            <section class="demo" aria-label="Interactive Game of Life demo">
+                <h2>Try the Game of Life</h2>
+                <p>Below is a working Game of Life in the browser. The stepping logic is written in a simple JS harness so the page works standalone; swapping in the Rust + WASM core from my other project only requires replacing the <code>step()</code> body with the exported update call.</p>
+
+                <div class="life-controls">
+                    <button type="button" id="toggle">Start</button>
+                    <button type="button" id="step">Step</button>
+                    <button type="button" id="random">Random fill</button>
+                    <button type="button" id="clear">Clear</button>
+                    <label for="speed">Speed
+                        <input id="speed" type="range" min="1" max="10" step="1" value="6">
+                    </label>
+                </div>
+
+                <div class="pattern-chips" aria-label="Pattern presets">
+                    <button type="button" data-pattern="random">Random</button>
+                    <button type="button" data-pattern="glider">Glider</button>
+                    <button type="button" data-pattern="blinker">Blinker</button>
+                    <button type="button" data-pattern="toad">Toad</button>
+                    <button type="button" data-pattern="pulsar">Pulsar</button>
+                    <button type="button" data-pattern="lwss">Lightweight spaceship</button>
+                </div>
+
+                <canvas id="life-canvas" width="720" height="432" role="img" aria-label="Game of Life grid"></canvas>
+                <p class="small-note">JS rendering harness for now. Swap your Rust/WASM update call into <code>step()</code> to run the compiled core.</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+    (() => {
+        const canvas = document.getElementById("life-canvas");
+        const ctx = canvas.getContext("2d");
+        const cellSize = 12;
+        const cols = Math.floor(canvas.width / cellSize);
+        const rows = Math.floor(canvas.height / cellSize);
+
+        let current = new Uint8Array(cols * rows);
+        let next = new Uint8Array(cols * rows);
+        let running = false;
+        let lastFrame = 0;
+        let intervalMs = 140;
+
+        const patterns = {
+            glider: [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]],
+            blinker: [[0, 0], [1, 0], [2, 0]],
+            toad: [[1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1]],
+            pulsar: [
+                [-6, -4], [-1, -4], [1, -4], [6, -4],
+                [-6, -3], [-1, -3], [1, -3], [6, -3],
+                [-6, -2], [-1, -2], [1, -2], [6, -2],
+                [-4, -6], [-4, -1], [-4, 1], [-4, 6],
+                [-3, -6], [-3, -1], [-3, 1], [-3, 6],
+                [-2, -6], [-2, -1], [-2, 1], [-2, 6],
+                [2, -6], [2, -1], [2, 1], [2, 6],
+                [3, -6], [3, -1], [3, 1], [3, 6],
+                [4, -6], [4, -1], [4, 1], [4, 6],
+                [-6, 2], [-1, 2], [1, 2], [6, 2],
+                [-6, 3], [-1, 3], [1, 3], [6, 3],
+                [-6, 4], [-1, 4], [1, 4], [6, 4]
+            ],
+            lwss: [
+                [0, 1], [3, 1],
+                [4, 2],
+                [0, 3], [4, 3],
+                [1, 4], [2, 4], [3, 4], [4, 4]
+            ]
+        };
+
+        function idx(x, y) {
+            return y * cols + x;
+        }
+
+        function wrap(n, max) {
+            if (n < 0) return max - 1;
+            if (n >= max) return 0;
+            return n;
+        }
+
+        function randomize(density = 0.35) {
+            for (let i = 0; i < current.length; i++) {
+                current[i] = Math.random() < density ? 1 : 0;
+            }
+        }
+
+        function clearGrid() {
+            current.fill(0);
+        }
+
+        function loadPattern(name) {
+            if (name === "random") {
+                randomize();
+                draw();
+                return;
+            }
+            clearGrid();
+            const pattern = patterns[name];
+            if (!pattern) {
+                draw();
+                return;
+            }
+            const offsetX = Math.floor(cols / 2);
+            const offsetY = Math.floor(rows / 2);
+            pattern.forEach(([dx, dy]) => {
+                const x = wrap(offsetX + dx, cols);
+                const y = wrap(offsetY + dy, rows);
+                current[idx(x, y)] = 1;
+            });
+            draw();
+        }
+
+        function neighbourCount(x, y) {
+            let total = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = wrap(x + dx, cols);
+                    const ny = wrap(y + dy, rows);
+                    total += current[idx(nx, ny)];
+                }
+            }
+            return total;
+        }
+
+        function step() {
+            // Replace this body with your Rust/WASM update call if desired.
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const alive = current[idx(x, y)];
+                    const n = neighbourCount(x, y);
+                    const nextAlive = (alive && (n === 2 || n === 3)) || (!alive && n === 3);
+                    next[idx(x, y)] = nextAlive ? 1 : 0;
+                }
+            }
+            [current, next] = [next, current];
+        }
+
+        function draw() {
+            ctx.fillStyle = "#0b1021";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#7dd3fc";
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    if (current[idx(x, y)]) {
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+                    }
+                }
+            }
+        }
+
+        function loop(timestamp) {
+            if (running && timestamp - lastFrame >= intervalMs) {
+                lastFrame = timestamp;
+                step();
+                draw();
+            }
+            requestAnimationFrame(loop);
+        }
+
+        function toggle() {
+            running = !running;
+            toggleBtn.textContent = running ? "Pause" : "Start";
+        }
+
+        const toggleBtn = document.getElementById("toggle");
+        const stepBtn = document.getElementById("step");
+        const randomBtn = document.getElementById("random");
+        const clearBtn = document.getElementById("clear");
+        const speed = document.getElementById("speed");
+
+        toggleBtn.addEventListener("click", toggle);
+        stepBtn.addEventListener("click", () => {
+            running = false;
+            toggleBtn.textContent = "Start";
+            step();
+            draw();
+        });
+        randomBtn.addEventListener("click", () => {
+            running = false;
+            toggleBtn.textContent = "Start";
+            randomize();
+            draw();
+        });
+        clearBtn.addEventListener("click", () => {
+            running = false;
+            toggleBtn.textContent = "Start";
+            clearGrid();
+            draw();
+        });
+        speed.addEventListener("input", (e) => {
+            const value = Number(e.target.value);
+            intervalMs = 1000 / value;
+        });
+
+        document.querySelectorAll("[data-pattern]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                running = false;
+                toggleBtn.textContent = "Start";
+                loadPattern(btn.dataset.pattern);
+            });
+        });
+
+        randomize(0.32);
+        draw();
+        requestAnimationFrame(loop);
+    })();
+    </script>
+</body>
+</html>
+
