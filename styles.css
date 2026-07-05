@@ -11,6 +11,15 @@
     font-size: 2em;
 }
 
+#code-open-link,
+#code-open-link:visited,
+#code-open-link:hover,
+#code-open-link:active {
+    color: black;
+    font-weight: bold;
+    text-decoration: none;
+}
+
 .menu {
     display: flex;
     justify-content: center;
@@ -126,4 +135,94 @@ u {
     text-decoration-color: #000;
     text-decoration-line: underline;
     text-decoration-thickness: 3px;
+}
+
+.code-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 20px;
+}
+
+.code-side-menu {
+    min-width: 200px;
+    border-right: 3px solid #000;
+    padding-right: 12px;
+    box-sizing: border-box;
+}
+
+.code-side-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.code-side-menu button {
+    background: none;
+    border: none;
+    font: inherit;
+    color: #000;
+    padding: 6px 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.code-side-menu button:hover {
+    color: cadetblue;
+    text-decoration: underline;
+}
+
+.code-side-menu button.active {
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+}
+
+.code-example-panel {
+    flex: 1;
+    border: 1px solid #000;
+    background: #f8f8f8;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.code-example-panel iframe {
+    width: 100%;
+    height: 520px;
+    border: 1px solid #000;
+    background: #fff;
+}
+
+.code-note {
+    font-size: 0.9em;
+    margin-top: 8px;
+}
+
+.code-note a {
+    color: #000;
+    text-decoration: none;
+}
+
+.code-note a:hover {
+    color: cadetblue;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .code-layout {
+        flex-direction: column;
+    }
+
+    .code-side-menu {
+        border-right: none;
+        border-bottom: 3px solid #000;
+        padding-bottom: 12px;
+    }
+
+    .code-example-panel iframe {
+        height: 420px;
+    }
 }

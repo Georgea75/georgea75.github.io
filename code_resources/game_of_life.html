@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        :root {
+            --ink: #000;
+            --muted: #222;
+            --bg: #fff;
+            --panel: #f8f8f8;
+            --border: #000;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+            color: var(--ink);
+            background: var(--bg);
+            line-height: 1.5em;
+        }
+
+        .page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header.hero {
+            border-bottom: 3px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 12px;
+            margin: 0 0 10px;
+            color: var(--muted);
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 1.6em;
+            line-height: 1.25;
+        }
+
+        h2 {
+            margin: 16px 0 10px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+            font-size: 1.25em;
+        }
+
+        h3 {
+            margin: 12px 0 6px;
+            font-size: 1.05em;
+        }
+
+        p {
+            margin: 0 0 12px;
+            color: var(--muted);
+        }
+
+        ul {
+            margin: 0 0 12px 18px;
+            color: var(--muted);
+        }
+
+        main {
+            border: 1px solid var(--border);
+            background: var(--panel);
+        }
+
+        section {
+            padding: 16px 18px;
+        }
+
+        section + section {
+            border-top: 1px solid var(--border);
+        }
+
+        .examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .example-card {
+            border: 1px solid var(--border);
+            background: #fff;
+            padding: 10px 12px;
+        }
+
+        .demo {
+            background: #fff;
+        }
+
+        .life-controls {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap !important;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            margin: 10px 0 12px;
+            width: 100%;
+        }
+
+        .life-controls > * {
+            flex: 0 1 auto;
+            width: auto !important;
+            max-width: 100%;
+        }
+
+        .life-controls button,
+        .life-controls select,
+        .life-controls input[type="range"] {
+            background: #fff;
+            color: var(--ink);
+            border: 1px solid var(--border);
+            padding: 7px 10px;
+            font-size: 14px;
+            display: inline-flex;
+            white-space: nowrap;
+        }
+
+        .life-controls button:hover {
+            cursor: pointer;
+            background: #000;
+            color: #fff;
+        }
+
+        .life-controls label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+            padding: 6px 0;
+        }
+
+        canvas {
+            border: 1px solid var(--border);
+            background: #fff;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            image-rendering: pixelated;
+        }
+
+        .pattern-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0 0 10px;
+        }
+
+        .pattern-chips button {
+            background: #fff;
+            color: var(--ink);
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .pattern-chips button:hover {
+            cursor: pointer;
+            background: #000;
+            color: #fff;
+        }
+
+        .small-note {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 10px;
+        }
+
+        @media (max-width: 640px) {
+            section {
+                padding: 14px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container page">
+        <header class="hero">
+            <div class="eyebrow">Agent-based modelling · Rust · WebAssembly</div>
+            <h1>Conway's Game of Life in WebAssembly</h1>
+        </header>
+        
+        <section class="demo" aria-label="Interactive Game of Life demo">
+            <canvas id="life-canvas" width="720" height="432" role="img" aria-label="Game of Life grid"></canvas>
+            <div class="life-controls">
+                <button type="button" id="toggle">Start</button>
+                <button type="button" id="step">Step</button>
+                <button type="button" id="random">Random fill</button>
+                <button type="button" id="clear">Clear</button>
+                <label for="speed">Speed
+                    <input id="speed" type="range" min="1" max="10" step="1" value="6">
+                </label>
+            </div>
+
+            <div class="pattern-chips" aria-label="Pattern presets">
+                <button type="button" data-pattern="random">Random</button>
+                <button type="button" data-pattern="glider">Glider</button>
+                <button type="button" data-pattern="blinker">Blinker</button>
+                <button type="button" data-pattern="toad">Toad</button>
+                <button type="button" data-pattern="pulsar">Pulsar</button>
+                <button type="button" data-pattern="lwss">Lightweight spaceship</button>
+            </div>
+        </section>
+        <h2>Why build the Game of Life</h2>
+        <p>This project dates back to 2020. I had just completed Arup's Graduate programme and moved into a new role working with the City Modelling Lab. An in-house research group building out the company's city simulation capabilities.</p>
+        <p>The team was tasked with developing new city simulation capabilities, including work on Monty, a nationwide agent-based modelling platform for the Ministry of Transport in New Zealand. I wanted to understand the foundations behind these kinds of models better.</p>
+        <p>I noticed that a few foundational simulations appeared repeatedly in the literature. I decided that implementing these examples from scratch would be a good way to build intuition around the underlying ideas.</p>
+        <p>The first two projects I tackled were Conway’s Game of Life and a flocking simulation (Boids).</p>
+        <h2>Why Rust + WebAssembly?</h2>
+        <p>Both projects are well understood and not especially large. So I wanted to use them as an opportunity to learn some new technologies.</p>
+        <p>I had been interested in Rust for a while. Python had become my primary tool during my time at Arup. However, as I worked on larger projects, I became increasingly aware of the trade-offs Python makes for its simplicity. This made me eager to learn languages that placed more emphasis on safety and performance.</p>
+        <p>At the same time, I had very little experience with web technologies and was curious about WebAssembly. A technology that allows code written in languages like Rust to run in the browser.</p>
+        <p>The result, embedded at the start of this post, is a working version of Conway's Game of Life using Rust and WASM.</p>
+    </div>
+
+    <script type="module">
+    import init, { Universe, set_panic_hook } from "./pkg/gameOfLife/conway_wasm.js";
+
+    (async () => {
+        const wasm = await init();
+        set_panic_hook();
+
+        const canvas = document.getElementById("life-canvas");
+        const ctx = canvas.getContext("2d");
+        const cellSize = 12;
+        const cols = Math.floor(canvas.width / cellSize);
+        const rows = Math.floor(canvas.height / cellSize);
+
+        let universe = Universe.random(cols, rows, 0.32);
+        let cellsView = new Uint8Array(wasm.memory.buffer, universe.cells_ptr(), universe.cells_len());
+        let running = false;
+        let lastFrame = 0;
+        let intervalMs = 140;
+
+        const patterns = {
+            glider: [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]],
+            blinker: [[0, 0], [1, 0], [2, 0]],
+            toad: [[1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1]],
+            pulsar: [
+                [-6, -4], [-1, -4], [1, -4], [6, -4],
+                [-6, -3], [-1, -3], [1, -3], [6, -3],
+                [-6, -2], [-1, -2], [1, -2], [6, -2],
+                [-4, -6], [-4, -1], [-4, 1], [-4, 6],
+                [-3, -6], [-3, -1], [-3, 1], [-3, 6],
+                [-2, -6], [-2, -1], [-2, 1], [-2, 6],
+                [2, -6], [2, -1], [2, 1], [2, 6],
+                [3, -6], [3, -1], [3, 1], [3, 6],
+                [4, -6], [4, -1], [4, 1], [4, 6],
+                [-6, 2], [-1, 2], [1, 2], [6, 2],
+                [-6, 3], [-1, 3], [1, 3], [6, 3],
+                [-6, 4], [-1, 4], [1, 4], [6, 4]
+            ],
+            lwss: [
+                [0, 1], [3, 1],
+                [4, 2],
+                [0, 3], [4, 3],
+                [1, 4], [2, 4], [3, 4], [4, 4]
+            ]
+        };
+
+        function idx(x, y) {
+            return y * cols + x;
+        }
+
+        function wrap(n, max) {
+            if (n < 0) return max - 1;
+            if (n >= max) return 0;
+            return n;
+        }
+
+        function refreshView() {
+            cellsView = new Uint8Array(wasm.memory.buffer, universe.cells_ptr(), universe.cells_len());
+        }
+
+        function randomize(density = 0.35) {
+            universe.randomize(density);
+            refreshView();
+        }
+
+        function clearGrid() {
+            universe.clear();
+            refreshView();
+        }
+
+        function loadPattern(name) {
+            if (name === "random") {
+                randomize();
+                draw();
+                return;
+            }
+            universe.clear();
+            const pattern = patterns[name];
+            if (!pattern) {
+                draw();
+                return;
+            }
+            const offsetX = Math.floor(cols / 2);
+            const offsetY = Math.floor(rows / 2);
+            pattern.forEach(([dx, dy]) => {
+                const x = wrap(offsetX + dx, cols);
+                const y = wrap(offsetY + dy, rows);
+                universe.set_cell(y, x, true);
+            });
+            refreshView();
+            draw();
+        }
+
+        function step() {
+            universe.tick();
+            refreshView();
+        }
+
+        function draw() {
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#000";
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    if (cellsView[idx(x, y)]) {
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+                    }
+                }
+            }
+        }
+
+        function loop(timestamp) {
+            if (running && timestamp - lastFrame >= intervalMs) {
+                lastFrame = timestamp;
+                step();
+                draw();
+            }
+            requestAnimationFrame(loop);
+        }
+
+        function toggle() {
+            running = !running;
+            toggleBtn.textContent = running ? "Pause" : "Start";
+        }
+
+        const toggleBtn = document.getElementById("toggle");
+        const stepBtn = document.getElementById("step");
+        const randomBtn = document.getElementById("random");
+        const clearBtn = document.getElementById("clear");
+        const speed = document.getElementById("speed");
+
+        toggleBtn.addEventListener("click", toggle);
+        stepBtn.addEventListener("click", () => {
+            running = false;
+            toggleBtn.textContent = "Start";
+            step();
+            draw();
+        });
+        randomBtn.addEventListener("click", () => {
+            running = false;
+            toggleBtn.textContent = "Start";
+            randomize();
+            draw();
+        });
+        clearBtn.addEventListener("click", () => {
+            running = false;
+            toggleBtn.textContent = "Start";
+            clearGrid();
+            draw();
+        });
+        speed.addEventListener("input", (e) => {
+            const value = Number(e.target.value);
+            intervalMs = 1000 / value;
+        });
+
+        document.querySelectorAll("[data-pattern]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                running = false;
+                toggleBtn.textContent = "Start";
+                loadPattern(btn.dataset.pattern);
+            });
+        });
+
+        refreshView();
+        draw();
+        requestAnimationFrame(loop);
+    })();
+    </script>
+</body>
+</html>
+

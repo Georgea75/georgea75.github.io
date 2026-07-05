@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>George Alexander</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+    <a href="index.html" class="title-link"><h1 class="title"> George Alexander. </h1></a>
+    <ul class="menu">
+        <li><a href="index.html">About</a></li>
+        <li><a href="music.html">Music</a></li>
+        <li><a href="code.html"><u>Code</u></a></li>
+        <li><a href="cv.html">CV</a></li>
+    </ul>
+
+
+    <div class="code-layout">
+        <nav class="code-side-menu" aria-label="Code examples">
+            <h2>Examples.</h2>
+            <ul>
+                <li><button type="button" class="active" data-example="game-of-life">The Game of Life: Rust + WASM</button></li>
+            </ul>
+        </nav>
+
+        <section class="code-example-panel">
+        <a id="code-open-link" href="code_resources/game_of_life.html" target="_blank" rel="noopener">⛶</a>    
+        <iframe id="code-frame" title="Selected code example" loading="lazy"></iframe>
+        </section>
+    </div>
+
+    <div class="contact">
+        <a href="mailto:georgetucker.a@gmail.com" aria-label="Email">
+            <i class="fas fa-envelope"></i>
+        </a>
+        <a href="https://github.com/Georgea75" target="_blank" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+        </a>
+        <a href="https://www.linkedin.com/in/george-alexander-709401134/" target="_blank" aria-label="LinkedIn">
+            <i class="fab fa-linkedin"></i>
+        </a>
+    </div>
+    </div>
+
+    <script>
+    (function () {
+        const examples = {
+            "game-of-life": {
+                title: "The Game of Life: Rust + WASM",
+                path: "code_resources/game_of_life.html"
+            }
+        };
+
+        const buttons = Array.from(document.querySelectorAll("[data-example]"));
+        const frame = document.getElementById("code-frame");
+
+        const openLink = document.getElementById("code-open-link");
+
+        const requested = new URLSearchParams(window.location.search).get("example");
+        const defaultKey = examples[requested] ? requested : Object.keys(examples)[0];
+
+        function setExample(key) {
+            const example = examples[key];
+            if (!example) {
+                return;
+            }
+
+            buttons.forEach((button) => {
+                button.classList.toggle("active", button.dataset.example === key);
+            });
+
+            frame.src = example.path;
+            openLink.href = example.path;
+
+            const url = new URL(window.location.href);
+            url.searchParams.set("example", key);
+            window.history.replaceState({}, "", url);
+        }
+
+        buttons.forEach((button) => {
+            button.addEventListener("click", () => setExample(button.dataset.example));
+        });
+
+        setExample(defaultKey);
+    })();
+    </script>
+</body>
+</html>
