@@ -22,17 +22,13 @@
         <nav class="code-side-menu" aria-label="Code examples">
             <h2>Examples.</h2>
             <ul>
-                <li><button type="button" class="active" data-example="game-of-life">From Traffic Simulations to Game of Life (Rust + WASM)</button></li>
+                <li><button type="button" class="active" data-example="game-of-life">The Game of Life: Rust + WASM</button></li>
             </ul>
         </nav>
 
         <section class="code-example-panel">
-            <h2 id="code-example-title">From Traffic Simulations to Game of Life (Rust + WASM)</h2>
-            <iframe id="code-frame" title="Selected code example" loading="lazy"></iframe>
-            <p class="code-note">
-                Open in new tab:
-                <a id="code-open-link" href="code_resources/game_of_life.html" target="_blank" rel="noopener">code_resources/game_of_life.html</a>
-            </p>
+        <a id="code-open-link" href="code_resources/game_of_life.html" target="_blank" rel="noopener">⛶</a>    
+        <iframe id="code-frame" title="Selected code example" loading="lazy"></iframe>
         </section>
     </div>
 
@@ -53,14 +49,14 @@
     (function () {
         const examples = {
             "game-of-life": {
-                title: "From Traffic Simulations to Game of Life (Rust + WASM)",
+                title: "The Game of Life: Rust + WASM",
                 path: "code_resources/game_of_life.html"
             }
         };
 
         const buttons = Array.from(document.querySelectorAll("[data-example]"));
         const frame = document.getElementById("code-frame");
-        const titleEl = document.getElementById("code-example-title");
+
         const openLink = document.getElementById("code-open-link");
 
         const requested = new URLSearchParams(window.location.search).get("example");
@@ -76,10 +72,8 @@
                 button.classList.toggle("active", button.dataset.example === key);
             });
 
-            titleEl.textContent = example.title;
             frame.src = example.path;
             openLink.href = example.path;
-            openLink.textContent = example.path;
 
             const url = new URL(window.location.href);
             url.searchParams.set("example", key);
