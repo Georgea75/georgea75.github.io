@@ -1,0 +1,19 @@
+{
+  "name": "conway-wasm",
+  "collaborators": [
+    "You <you@example.com>"
+  ],
+  "description": "WebAssembly Game of Life implementation for static sites",
+  "version": "0.1.0",
+  "license": "MIT OR Apache-2.0",
+  "files": [
+    "conway_wasm_bg.wasm",
+    "conway_wasm.js",
+    "conway_wasm.d.ts"
+  ],
+  "module": "conway_wasm.js",
+  "types": "conway_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
